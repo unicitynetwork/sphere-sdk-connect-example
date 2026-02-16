@@ -40,8 +40,12 @@ async function main() {
   console.log('Permissions:', result.permissions.join(', '));
 
   // Subscribe to events
-  client.on('transfer:incoming', (data) => {
+  client.on('transfer:incoming', (data: unknown) => {
     console.log('\n[EVENT] transfer:incoming:', JSON.stringify(data));
+    showPrompt();
+  });
+  client.on('message:dm', (data: unknown) => {
+    console.log('\n[EVENT] message:dm:', JSON.stringify(data));
     showPrompt();
   });
 
@@ -196,6 +200,43 @@ async function main() {
             console.log('Sign result:', JSON.stringify(signResult, null, 2));
             break;
           }
+          case 'conversations':
+          case 'convos': {
+            const convos = await client.query(RPC_METHODS.GET_CONVERSATIONS);
+            console.log('Conversations:', JSON.stringify(convos, null, 2));
+            break;
+          }
+          case 'messages':
+          case 'msgs': {
+            const peer = parts[1];
+            if (!peer) {
+              console.log('Usage: messages <peerPubkey> [limit]');
+              break;
+            }
+            const msgParams: Record<string, unknown> = { peerPubkey: peer };
+            if (parts[2]) msgParams.limit = parseInt(parts[2]);
+            const msgs = await client.query(RPC_METHODS.GET_MESSAGES, msgParams);
+            console.log('Messages:', JSON.stringify(msgs, null, 2));
+            break;
+          }
+          case 'unread': {
+            const unreadPeer = parts[1] || undefined;
+            const unreadParams: Record<string, unknown> = {};
+            if (unreadPeer) unreadParams.peerPubkey = unreadPeer;
+            const unread = await client.query(RPC_METHODS.GET_DM_UNREAD_COUNT, unreadParams);
+            console.log('Unread:', JSON.stringify(unread, null, 2));
+            break;
+          }
+          case 'read': {
+            const ids = parts.slice(1);
+            if (ids.length === 0) {
+              console.log('Usage: read <messageId1> [messageId2] ...');
+              break;
+            }
+            const readResult = await client.query(RPC_METHODS.MARK_AS_READ, { messageIds: ids });
+            console.log('Marked as read:', JSON.stringify(readResult, null, 2));
+            break;
+          }
           case 'disconnect':
           case 'exit':
           case 'quit': {
@@ -226,6 +267,12 @@ Commands:
     pay @to amt [coin] [message] - Send payment request
     receive                      - Receive incoming tokens
     sign message text            - Sign a message
+
+  CHAT (require dm:read permission)
+    conversations                - List DM conversations
+    messages <pubkey> [limit]    - Get messages with a peer
+    unread [pubkey]              - Get unread message count
+    read <id1> [id2] ...         - Mark messages as read
 
   OTHER
     disconnect                   - Disconnect and exit

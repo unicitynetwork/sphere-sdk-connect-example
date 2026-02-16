@@ -38,6 +38,22 @@ export function relativeTime(timestamp: number): string {
   return `${days}d ago`;
 }
 
+export function chatTime(timestamp: number): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  if (isToday) {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+    ' ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
 const L1_DECIMALS = 8;
 
 export function formatL1(amount: string): string {
