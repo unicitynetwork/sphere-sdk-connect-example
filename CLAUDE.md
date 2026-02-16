@@ -8,16 +8,41 @@ Demonstration project showing how to integrate the **Sphere Connect** protocol i
 sphere-sdk-connect-example/
 ├── browser/                    # React dApp example (Vite + Tailwind)
 │   ├── src/
-│   │   ├── App.tsx            # Main layout, renders connected/disconnected state
+│   │   ├── App.tsx            # Sidebar navigation + section routing
 │   │   ├── main.tsx           # React entry point
 │   │   ├── hooks/
 │   │   │   └── useWalletConnect.ts   # Core hook: popup/iframe connect logic
+│   │   ├── lib/
+│   │   │   ├── types.ts             # Local TS interfaces (Asset, Token, L1Balance, etc.)
+│   │   │   └── format.ts           # Amount formatting (decimals, fiat, L1, truncate, relativeTime)
 │   │   └── components/
 │   │       ├── ConnectButton.tsx     # "Connect Wallet" button with loading state
-│   │       ├── WalletInfo.tsx        # Displays identity (nametag, addresses, pubkey)
-│   │       ├── BalanceDisplay.tsx    # Asset/balance queries (auto-refresh 15s)
-│   │       ├── ActionPanel.tsx       # Tabbed UI: Send / DM / Resolve
-│   │       └── EventLog.tsx          # Real-time wallet event display
+│   │       ├── layout/
+│   │       │   ├── PageShell.tsx     # Sidebar + header + content area layout
+│   │       │   └── WalletHeader.tsx  # Compact header: nametag, address, disconnect
+│   │       ├── ui/
+│   │       │   ├── ResultDisplay.tsx # JSON result viewer with copy + raw toggle
+│   │       │   ├── CoinBadge.tsx    # Token icon (img or colored letter) + symbol
+│   │       │   ├── CoinSelect.tsx   # Dropdown token selector (fetches assets from wallet)
+│   │       │   └── StatusBadge.tsx  # Colored status badges (confirmed/pending/failed)
+│   │       ├── queries/             # 8 query panels (read-only operations)
+│   │       │   ├── IdentityPanel.tsx     # sphere_getIdentity
+│   │       │   ├── AssetsPanel.tsx       # sphere_getAssets (table with icons, fiat, 24h)
+│   │       │   ├── BalancePanel.tsx      # sphere_getBalance + sphere_getFiatBalance
+│   │       │   ├── TokensPanel.tsx       # sphere_getTokens (with status badges)
+│   │       │   ├── HistoryPanel.tsx      # sphere_getHistory (with type badges)
+│   │       │   ├── L1BalancePanel.tsx    # sphere_l1GetBalance (vested/unvested breakdown)
+│   │       │   ├── L1HistoryPanel.tsx    # sphere_l1GetHistory (with limit param)
+│   │       │   └── ResolvePanel.tsx      # sphere_resolve (identifier input)
+│   │       ├── intents/             # 6 intent panels (require wallet approval)
+│   │       │   ├── SendPanel.tsx         # send (recipient, amount, coin selector, memo)
+│   │       │   ├── L1SendPanel.tsx       # l1_send (shows L1 balance, recipient, amount)
+│   │       │   ├── DMPanel.tsx           # dm (recipient, message)
+│   │       │   ├── PaymentRequestPanel.tsx # payment_request (recipient, amount, coin, message)
+│   │       │   ├── ReceivePanel.tsx      # receive (button only, no params)
+│   │       │   └── SignMessagePanel.tsx  # sign_message (message textarea)
+│   │       └── events/
+│   │           └── EventLogPanel.tsx # All 9 events, color-coded, filterable
 │   ├── index.html
 │   ├── package.json
 │   ├── tsconfig.json
@@ -25,8 +50,8 @@ sphere-sdk-connect-example/
 │
 └── nodejs/                    # Node.js CLI example
     ├── src/
-    │   ├── index.ts               # Interactive CLI client
-    │   └── mock-wallet-server.ts  # Mock wallet for testing (no real Sphere needed)
+    │   ├── index.ts               # Interactive CLI client (all queries + intents)
+    │   └── mock-wallet-server.ts  # Mock wallet with rich test data
     ├── package.json
     └── tsconfig.json
 ```
@@ -56,7 +81,10 @@ npm run server     # WebSocket server on ws://localhost:8765
 npm run client     # Connects to ws://localhost:8765
 ```
 
-CLI commands: `balance`, `assets`, `tokens`, `history`, `identity`, `l1`, `resolve @tag`, `send @to amt [coin]`, `dm @to message`, `disconnect`, `help`.
+CLI commands:
+- **Queries:** `identity`, `balance`, `assets`, `fiat`, `tokens`, `history`, `l1`, `l1history [limit]`, `resolve @tag`
+- **Intents:** `send @to amt [coin]`, `l1send alpha1... amount`, `dm @to message`, `pay @to amt [coin] [message]`, `receive`, `sign message text`
+- **Other:** `disconnect`, `help`
 
 ## Dependencies
 
@@ -137,7 +165,8 @@ The browser `tsconfig.json` requires explicit path mappings for connect submodul
 | `send` | L3 token transfer | `transfer:request` |
 | `l1_send` | L1 transaction | `l1:transfer` |
 | `dm` | Direct message | `dm:request` |
-| `payment_request` | Payment request | `payment_request` |
+| `payment_request` | Payment request | `payment:request` |
+| `receive` | Receive incoming tokens | `transfer:request` |
 | `sign_message` | Message signing | `sign:request` |
 
 ### Connection Flow
@@ -187,6 +216,43 @@ HOST_READY_TIMEOUT = 30_000  // ms
 
 ## Key Implementation Details
 
+### Browser UI Layout
+
+Sidebar + content area design:
+```
+┌─────────────────────────────────────────────────┐
+│  Sphere Connect Example    │  @alice │ Disconnect│
+├──────────┬──────────────────────────────────────┤
+│ QUERIES  │                                      │
+│  Identity│  (Active panel content)              │
+│  Assets  │                                      │
+│  Balance │                                      │
+│  Tokens  │                                      │
+│  History │                                      │
+│  L1 Bal  │                                      │
+│  L1 Hist │                                      │
+│  Resolve │                                      │
+│ INTENTS  │                                      │
+│  Send    │                                      │
+│  L1 Send │                                      │
+│  DM      │                                      │
+│  Pay Req │                                      │
+│  Receive │                                      │
+│  Sign    │                                      │
+│ EVENTS   │                                      │
+│  Log     │                                      │
+└──────────┴──────────────────────────────────────┘
+```
+On mobile: sidebar collapses to a horizontal scrollable nav bar.
+
+### Token Display
+
+Token metadata (symbol, name, decimals, iconUrl) comes from the wallet's TokenRegistry via Connect responses — the dApp does **not** need its own registry. Components use:
+- `CoinBadge` — renders token icon (img from `iconUrl` or colored letter fallback) + symbol
+- `CoinSelect` — dropdown that fetches assets from wallet via `GET_ASSETS` query, shows icon + symbol + balance per coin
+- `formatAmount(raw, decimals)` — converts raw amounts using token's decimal places
+- `formatL1(amount)` — formats L1 ALPHA amounts (8 decimal places)
+
 ### useWalletConnect Hook (`browser/src/hooks/useWalletConnect.ts`)
 
 Central state management for wallet connection:
@@ -194,14 +260,15 @@ Central state management for wallet connection:
 - Handles popup window open/close detection
 - Implements `HOST_READY` handshake timeout
 - Exposes: `client`, `identity`, `isConnected`, `isConnecting`, `error`, `connect()`, `disconnect()`
+- Exposes: `query()`, `intent()`, `on()` — passed to panels as props
 
 ### Mock Wallet Server (`nodejs/src/mock-wallet-server.ts`)
 
 Testing-only server that emulates wallet behavior:
 - Creates `ConnectHost` with mock `SphereInstance`
 - Auto-approves all connection requests with full permissions
-- Auto-approves all intents with success responses
-- Returns mock identity, assets, balance, tokens, history, L1 data
+- Auto-approves all intents with action-specific success responses
+- Returns rich mock data: identity, assets (UCT + USDU with fiat/24h change), tokens (with statuses), history, L1 balance (with vested/unvested), L1 history
 
 ### Event Subscriptions
 
@@ -209,7 +276,11 @@ Subscribable events (via `client.on()`):
 - `transfer:incoming` — Received tokens
 - `transfer:confirmed` — Outgoing confirmed
 - `transfer:failed` — Outgoing failed
+- `identity:changed` — Address switch
 - `nametag:registered` — Nametag registered
+- `nametag:recovered` — Nametag recovered
+- `address:activated` — New address tracked
+- `sync:provider` — Sync result
 - `payment_request:incoming` — Payment request received
 
 ## Connect Module Source (in sphere-sdk)
