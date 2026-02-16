@@ -31,7 +31,8 @@ export function ReceivePanel({ intent }: Props) {
         <h2 className="text-lg font-semibold text-gray-900">Receive</h2>
         <span className="text-[10px] font-mono text-orange-500 bg-orange-50 px-2 py-0.5 rounded">intent: receive</span>
       </div>
-      <p className="text-xs text-gray-400 mb-1">Check for and receive incoming transfers</p>
+      <p className="text-xs text-gray-400 mb-1">Explicit one-shot poll for pending incoming transfers via Nostr</p>
+      <p className="text-[11px] text-gray-400 mb-1">In a live wallet transfers arrive automatically — this is for CLI/batch scenarios without a persistent connection</p>
       <p className="text-[11px] text-yellow-600 mb-4">Requires wallet approval</p>
 
       <button onClick={execute} disabled={loading}
