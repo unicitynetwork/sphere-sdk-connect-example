@@ -8,41 +8,120 @@ import { ConnectHost, PERMISSION_SCOPES } from '@unicitylabs/sphere-sdk/connect'
 import type { DAppMetadata, PermissionScope } from '@unicitylabs/sphere-sdk/connect';
 import { WebSocketTransport } from '@unicitylabs/sphere-sdk/connect/nodejs';
 
+const now = Date.now();
+
 // Mock Sphere object matching the SphereInstance interface expected by ConnectHost
 const mockSphere = {
   identity: {
     chainPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
-    l1Address: 'alpha1testmockaddress',
-    directAddress: 'DIRECT://mock-test-address',
-    nametag: 'mock-wallet',
+    l1Address: 'alpha1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
+    directAddress: 'DIRECT://abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    nametag: 'alice',
   },
   payments: {
     getBalance: (_coinId?: string) => [
-      { coinId: 'UCT', totalAmount: '5000000', symbol: 'UCT' },
+      {
+        coinId: 'UCT', symbol: 'UCT', name: 'Unicity Token', decimals: 8,
+        totalAmount: '500000000', tokenCount: 3,
+        confirmedAmount: '300000000', unconfirmedAmount: '200000000',
+        confirmedTokenCount: 2, unconfirmedTokenCount: 1,
+      },
+      {
+        coinId: 'USDU', symbol: 'USDU', name: 'USD Unicity', decimals: 6,
+        totalAmount: '1000000000', tokenCount: 1,
+        confirmedAmount: '1000000000', unconfirmedAmount: '0',
+        confirmedTokenCount: 1, unconfirmedTokenCount: 0,
+      },
     ],
     getAssets: async (_coinId?: string) => [
-      { coinId: 'UCT', symbol: 'UCT', totalAmount: '5000000', tokenCount: 3 },
+      {
+        coinId: 'UCT', symbol: 'UCT', name: 'Unicity Token', decimals: 8,
+        iconUrl: null, totalAmount: '500000000', tokenCount: 3,
+        confirmedAmount: '300000000', unconfirmedAmount: '200000000',
+        confirmedTokenCount: 2, unconfirmedTokenCount: 1,
+        priceUsd: 0.051, priceEur: 0.047, change24h: 2.4,
+        fiatValueUsd: 2.55, fiatValueEur: 2.35,
+      },
+      {
+        coinId: 'USDU', symbol: 'USDU', name: 'USD Unicity', decimals: 6,
+        iconUrl: null, totalAmount: '1000000000', tokenCount: 1,
+        confirmedAmount: '1000000000', unconfirmedAmount: '0',
+        confirmedTokenCount: 1, unconfirmedTokenCount: 0,
+        priceUsd: 1.0, priceEur: 0.92, change24h: 0.01,
+        fiatValueUsd: 1000.0, fiatValueEur: 920.0,
+      },
     ],
-    getFiatBalance: async () => 25.50,
+    getFiatBalance: async () => 1002.55,
     getTokens: (_filter?: unknown) => [
-      { id: 'tok-1', coinId: 'UCT', amount: '2000000' },
-      { id: 'tok-2', coinId: 'UCT', amount: '3000000' },
+      {
+        id: 'tok-abc123def456', coinId: 'UCT', symbol: 'UCT', name: 'Unicity Token',
+        decimals: 8, amount: '200000000', status: 'confirmed',
+        createdAt: now - 86400000, updatedAt: now - 3600000,
+      },
+      {
+        id: 'tok-789ghi012jkl', coinId: 'UCT', symbol: 'UCT', name: 'Unicity Token',
+        decimals: 8, amount: '100000000', status: 'confirmed',
+        createdAt: now - 43200000, updatedAt: now - 7200000,
+      },
+      {
+        id: 'tok-mno345pqr678', coinId: 'UCT', symbol: 'UCT', name: 'Unicity Token',
+        decimals: 8, amount: '200000000', status: 'submitted',
+        createdAt: now - 1800000, updatedAt: now - 600000,
+      },
+      {
+        id: 'tok-stu901vwx234', coinId: 'USDU', symbol: 'USDU', name: 'USD Unicity',
+        decimals: 6, amount: '1000000000', status: 'confirmed',
+        createdAt: now - 172800000, updatedAt: now - 86400000,
+      },
     ],
     getHistory: () => [
-      { type: 'sent', amount: '1000', coinId: 'UCT', timestamp: Date.now() - 3600000 },
-      { type: 'received', amount: '5000', coinId: 'UCT', timestamp: Date.now() - 7200000 },
+      {
+        id: 'h1', type: 'SENT', amount: '100000000', coinId: 'UCT', symbol: 'UCT',
+        timestamp: now - 3600000, recipientNametag: 'bob', transferId: 'xfer-001',
+      },
+      {
+        id: 'h2', type: 'RECEIVED', amount: '500000000', coinId: 'UCT', symbol: 'UCT',
+        timestamp: now - 7200000, senderPubkey: '03fedcba09876543210fedcba09876543210fedcba09876543210fedcba0987654321',
+        senderNametag: 'charlie',
+      },
+      {
+        id: 'h3', type: 'MINT', amount: '1000000000', coinId: 'USDU', symbol: 'USDU',
+        timestamp: now - 86400000,
+      },
     ],
     l1: {
-      getBalance: async () => ({ confirmed: '100000', total: '100000' }),
-      getHistory: async () => [],
+      getBalance: async () => ({
+        confirmed: '100000',
+        unconfirmed: '5000',
+        vested: '80000',
+        unvested: '20000',
+        total: '105000',
+      }),
+      getHistory: async (limit?: number) => {
+        const txs = [
+          {
+            txid: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
+            type: 'receive', amount: '50000', fee: '226',
+            address: 'alpha1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
+            confirmations: 144, timestamp: now - 86400000, blockHeight: 850000,
+          },
+          {
+            txid: 'f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5',
+            type: 'send', amount: '10000', fee: '340',
+            address: 'alpha1qrp33g0q5b5698ahp5jnf5yzjkcd2fdjl3lgdy4',
+            confirmations: 6, timestamp: now - 3600000, blockHeight: 850100,
+          },
+        ];
+        return limit ? txs.slice(0, limit) : txs;
+      },
     },
   },
   resolve: async (identifier: string) => ({
     nametag: identifier.replace('@', ''),
-    chainPubkey: '03fedcba0987654321',
-    l1Address: 'alpha1resolved',
-    directAddress: 'DIRECT://resolved',
-    transportPubkey: 'aa00bb11',
+    chainPubkey: '03fedcba09876543210fedcba09876543210fedcba09876543210fedcba0987654321',
+    l1Address: 'alpha1qrp33g0q5b5698ahp5jnf5yzjkcd2fdjl3lgdy4',
+    directAddress: 'DIRECT://fedcba09876543210fedcba09876543210fedcba09876543210fedcba0987654321',
+    transportPubkey: 'aa00bb11cc22dd33ee44ff5566778899aabbccddeeff00112233445566778899',
   }),
   on: () => () => {}, // no-op event subscription
 };
@@ -71,7 +150,37 @@ async function main() {
       console.log(`\nIntent received: ${action}`);
       console.log('Params:', JSON.stringify(params, null, 2));
       console.log('Auto-approving...\n');
-      return { result: { success: true, action, timestamp: Date.now() } };
+
+      switch (action) {
+        case 'send':
+          return {
+            result: {
+              id: `xfer-${Date.now()}`, status: 'delivered',
+              tokens: [{ id: `tok-new-${Date.now()}`, coinId: params.coinId ?? 'UCT', amount: params.amount, status: 'transferring' }],
+              tokenTransfers: [{ sourceTokenId: 'tok-abc123def456', method: 'direct' }],
+            },
+          };
+        case 'l1_send':
+          return { result: { txid: `l1tx-${Date.now()}`, success: true, fee: '340' } };
+        case 'dm':
+          return { result: { success: true, messageId: `msg-${Date.now()}`, timestamp: Date.now() } };
+        case 'payment_request':
+          return { result: { success: true, requestId: `pr-${Date.now()}`, createdAt: Date.now() } };
+        case 'receive':
+          return {
+            result: {
+              transfers: [{
+                id: 'inc-1', senderPubkey: '03fed...', senderNametag: 'charlie',
+                tokens: [{ id: 'tok-inc1', coinId: 'UCT', amount: '50000000' }],
+                receivedAt: Date.now(),
+              }],
+            },
+          };
+        case 'sign_message':
+          return { result: { signature: '3045022100abcdef...', message: params.message, publicKey: '02abc123...' } };
+        default:
+          return { result: { success: true, action, timestamp: Date.now() } };
+      }
     },
   } as any);
 
