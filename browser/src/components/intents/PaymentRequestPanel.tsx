@@ -24,7 +24,7 @@ export function PaymentRequestPanel({ intent, query }: Props) {
     setRaw(null);
     try {
       const to = recipient.startsWith('@') ? recipient : '@' + recipient;
-      const params: Record<string, unknown> = { recipient: to, amount, coinId };
+      const params: Record<string, unknown> = { to, amount, coinId };
       if (message) params.message = message;
       const result = await intent(INTENT_ACTIONS.PAYMENT_REQUEST, params);
       setRaw(result);

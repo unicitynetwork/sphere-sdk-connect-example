@@ -126,7 +126,7 @@ async function main() {
               break;
             }
             const sendResult = await client.intent(INTENT_ACTIONS.SEND, {
-              recipient: to.startsWith('@') ? to : '@' + to,
+              to: to.startsWith('@') ? to : '@' + to,
               amount,
               coinId,
             });
@@ -155,7 +155,7 @@ async function main() {
               break;
             }
             const dmResult = await client.intent(INTENT_ACTIONS.DM, {
-              recipient: dmTo.startsWith('@') ? dmTo : '@' + dmTo,
+              to: dmTo.startsWith('@') ? dmTo : '@' + dmTo,
               message,
             });
             console.log('DM result:', JSON.stringify(dmResult, null, 2));
@@ -171,7 +171,7 @@ async function main() {
               break;
             }
             const payResult = await client.intent(INTENT_ACTIONS.PAYMENT_REQUEST, {
-              recipient: payTo.startsWith('@') ? payTo : '@' + payTo,
+              to: payTo.startsWith('@') ? payTo : '@' + payTo,
               amount: payAmount,
               coinId: payCoin,
               ...(payMsg ? { message: payMsg } : {}),

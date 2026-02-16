@@ -24,7 +24,7 @@ export function SendPanel({ intent, query }: Props) {
     setRaw(null);
     try {
       const to = recipient.startsWith('@') ? recipient : '@' + recipient;
-      const params: Record<string, unknown> = { recipient: to, amount, coinId };
+      const params: Record<string, unknown> = { to, amount, coinId };
       if (memo) params.memo = memo;
       const result = await intent(INTENT_ACTIONS.SEND, params);
       setRaw(result);

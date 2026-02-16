@@ -20,7 +20,7 @@ export function DMPanel({ intent }: Props) {
     setRaw(null);
     try {
       const to = recipient.startsWith('@') ? recipient : '@' + recipient;
-      const result = await intent(INTENT_ACTIONS.DM, { recipient: to, message });
+      const result = await intent(INTENT_ACTIONS.DM, { to, message });
       setRaw(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed');
