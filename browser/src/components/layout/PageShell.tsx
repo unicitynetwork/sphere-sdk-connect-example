@@ -30,6 +30,9 @@ const INTENTS: NavItem[] = [
   { key: 'receive', label: 'Receive' },
   { key: 'sign-message', label: 'Sign Message' },
 ];
+const CHAT: NavItem[] = [
+  { key: 'chat', label: 'Chat' },
+];
 const EVENTS: NavItem[] = [
   { key: 'events', label: 'Event Log' },
 ];
@@ -65,7 +68,7 @@ export function PageShell({ identity, onDisconnect, section, onSectionChange, ch
       {/* Mobile horizontal nav */}
       <div className="lg:hidden border-b border-gray-200 bg-white overflow-x-auto">
         <div className="flex gap-1 px-3 py-2 min-w-max">
-          {[...QUERIES, ...INTENTS, ...EVENTS].map((item) => (
+          {[...QUERIES, ...INTENTS, ...CHAT, ...EVENTS].map((item) => (
             <button
               key={item.key}
               onClick={() => onSectionChange(item.key)}
@@ -86,6 +89,7 @@ export function PageShell({ identity, onDisconnect, section, onSectionChange, ch
         <aside className="hidden lg:block w-48 shrink-0 bg-white border-r border-gray-200 overflow-y-auto py-4">
           <NavGroup title="Queries" color="text-blue-500" items={QUERIES} active={section} onSelect={onSectionChange} />
           <NavGroup title="Intents" color="text-orange-500" items={INTENTS} active={section} onSelect={onSectionChange} />
+          <NavGroup title="Chat" color="text-green-500" items={CHAT} active={section} onSelect={onSectionChange} />
           <NavGroup title="Events" color="text-purple-500" items={EVENTS} active={section} onSelect={onSectionChange} />
         </aside>
 

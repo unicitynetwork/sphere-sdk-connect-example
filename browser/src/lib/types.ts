@@ -70,8 +70,34 @@ export interface PeerInfo {
   transportPubkey?: string;
 }
 
+export interface DirectMessage {
+  id: string;
+  senderPubkey: string;
+  senderNametag?: string;
+  recipientPubkey: string;
+  recipientNametag?: string;
+  content: string;
+  timestamp: number;
+  isRead: boolean;
+}
+
+export interface ConversationSummary {
+  peerPubkey: string;
+  peerNametag?: string;
+  lastMessage: DirectMessage;
+  unreadCount: number;
+  messageCount: number;
+}
+
+export interface ConversationPage {
+  messages: DirectMessage[];
+  hasMore: boolean;
+  oldestTimestamp: number | null;
+}
+
 export type Section =
   | 'identity' | 'assets' | 'balance' | 'tokens' | 'history'
   | 'l1-balance' | 'l1-history' | 'resolve'
   | 'send' | 'l1-send' | 'dm' | 'payment-request' | 'receive' | 'sign-message'
+  | 'chat'
   | 'events';

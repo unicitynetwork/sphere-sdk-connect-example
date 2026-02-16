@@ -124,6 +124,86 @@ const mockSphere = {
     transportPubkey: 'aa00bb11cc22dd33ee44ff5566778899aabbccddeeff00112233445566778899',
   }),
   on: () => () => {}, // no-op event subscription
+  communications: {
+    getConversations: () => {
+      const convos = new Map();
+      convos.set('03fedcba09876543210fedcba09876543210fedcba09876543210fedcba0987654321', [
+        {
+          id: 'dm-1', senderPubkey: '03fedcba09876543210fedcba09876543210fedcba09876543210fedcba0987654321',
+          senderNametag: 'bob', recipientPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+          recipientNametag: 'alice', content: 'Hey Alice, how are you?',
+          timestamp: now - 7200000, isRead: true,
+        },
+        {
+          id: 'dm-2', senderPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+          senderNametag: 'alice', recipientPubkey: '03fedcba09876543210fedcba09876543210fedcba09876543210fedcba0987654321',
+          recipientNametag: 'bob', content: 'Hi Bob! I am good, thanks!',
+          timestamp: now - 3600000, isRead: true,
+        },
+        {
+          id: 'dm-3', senderPubkey: '03fedcba09876543210fedcba09876543210fedcba09876543210fedcba0987654321',
+          senderNametag: 'bob', recipientPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+          recipientNametag: 'alice', content: 'Want to test the new Connect protocol?',
+          timestamp: now - 1800000, isRead: false,
+        },
+      ]);
+      convos.set('04aabbcc112233445566778899001122334455667788990011223344556677889900', [
+        {
+          id: 'dm-4', senderPubkey: '04aabbcc112233445566778899001122334455667788990011223344556677889900',
+          senderNametag: 'charlie', recipientPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+          recipientNametag: 'alice', content: 'Sent you some UCT!',
+          timestamp: now - 86400000, isRead: true,
+        },
+      ]);
+      return convos;
+    },
+    getConversationPage: (peerPubkey: string, _options?: { limit?: number; before?: number }) => {
+      const isBob = peerPubkey.startsWith('03fed');
+      return {
+        messages: isBob ? [
+          {
+            id: 'dm-1', senderPubkey: peerPubkey, senderNametag: 'bob',
+            recipientPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+            recipientNametag: 'alice', content: 'Hey Alice, how are you?',
+            timestamp: now - 7200000, isRead: true,
+          },
+          {
+            id: 'dm-2', senderPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+            senderNametag: 'alice', recipientPubkey: peerPubkey,
+            recipientNametag: 'bob', content: 'Hi Bob! I am good, thanks!',
+            timestamp: now - 3600000, isRead: true,
+          },
+          {
+            id: 'dm-3', senderPubkey: peerPubkey, senderNametag: 'bob',
+            recipientPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+            recipientNametag: 'alice', content: 'Want to test the new Connect protocol?',
+            timestamp: now - 1800000, isRead: false,
+          },
+        ] : [
+          {
+            id: 'dm-4', senderPubkey: peerPubkey, senderNametag: 'charlie',
+            recipientPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+            recipientNametag: 'alice', content: 'Sent you some UCT!',
+            timestamp: now - 86400000, isRead: true,
+          },
+        ],
+        hasMore: false,
+        oldestTimestamp: isBob ? now - 7200000 : now - 86400000,
+      };
+    },
+    getUnreadCount: (peerPubkey?: string) => peerPubkey?.startsWith('03fed') ? 1 : peerPubkey ? 0 : 1,
+    markAsRead: async (_messageIds: string[]) => { /* no-op */ },
+    sendDM: async (recipient: string, content: string) => ({
+      id: `msg-${Date.now()}`,
+      senderPubkey: '02abc123def456789012345678901234567890123456789012345678901234567890',
+      senderNametag: 'alice',
+      recipientPubkey: '03fedcba09876543210fedcba09876543210fedcba09876543210fedcba0987654321',
+      recipientNametag: recipient.replace('@', ''),
+      content,
+      timestamp: Date.now(),
+      isRead: false,
+    }),
+  },
 };
 
 const PORT = 8765;
@@ -163,7 +243,7 @@ async function main() {
         case 'l1_send':
           return { result: { txid: `l1tx-${Date.now()}`, success: true, fee: '340' } };
         case 'dm':
-          return { result: { success: true, messageId: `msg-${Date.now()}`, timestamp: Date.now() } };
+          return { result: { sent: true, messageId: `msg-${Date.now()}`, timestamp: Date.now() } };
         case 'payment_request':
           return { result: { success: true, requestId: `pr-${Date.now()}`, createdAt: Date.now() } };
         case 'receive':
