@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useWalletConnect } from './hooks/useWalletConnect';
 import { ConnectButton } from './components/ConnectButton';
-import { WalletApprovalPrompt } from './components/WalletApprovalPrompt';
 import { PageShell } from './components/layout/PageShell';
 import type { Section } from './lib/types';
 
@@ -84,18 +83,13 @@ export default function App() {
   };
 
   return (
-    <>
-      <PageShell
-        identity={wallet.identity!}
-        onDisconnect={wallet.disconnect}
-        section={section}
-        onSectionChange={setSection}
-      >
-        {panels[section]}
-      </PageShell>
-      {wallet.needsPopup && (
-        <WalletApprovalPrompt onOpen={wallet.openApprovalPopup} />
-      )}
-    </>
+    <PageShell
+      identity={wallet.identity!}
+      onDisconnect={wallet.disconnect}
+      section={section}
+      onSectionChange={setSection}
+    >
+      {panels[section]}
+    </PageShell>
   );
 }
